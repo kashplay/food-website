@@ -23,8 +23,8 @@ module.exports.createCheckoutSession = async function (req, res) {
       currency: 'inr',
       quantity: 1,
     }],
-    success_url: `${req.protocol}//${req.get("host")}/me`,
-    cancel_url: `${req.protocol}//${req.get("host")}/login`,
+    success_url: `${req.protocol}://${req.get("host")}/me`,
+    cancel_url: `${req.protocol}://${req.get("host")}/login`,
   });
   // req.protocol
 // req.headers.hostnam
