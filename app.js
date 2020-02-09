@@ -8,8 +8,11 @@ const planRouter = require("./routers/planRouter");
 const userRouter = require("./routers/userRouter");
 const viewRouter = require("./routers/viewRouter");
 const bookingRouter=require("./routers/bookingRouter");
+const bookingController=require("./controllers/bookingController")
 // converts buffer to json
 // 
+app.use(bodyParser.raw({type:'application/json'}))
+app.post("/webhook-checkout",bookingController.createbooking);
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 // => static files

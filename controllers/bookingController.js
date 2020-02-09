@@ -1,9 +1,12 @@
 const planModel = require("../models/planModel");
 const userModel = require("../models/userModel");
 const bookingModel = require("../models/bookingModel");
+const END_POINT_SECRET=process.env.END_POINT_SECRET_KEY;
 // const stripe = require("stripe");
+//stripe require stream parser in order to analyse the data 
 const SK = process.env.SK;
 const stripe = require('stripe')(SK);
+
 module.exports.createCheckoutSession = async function (req, res) {
   const id = req.params.id;
   const user = req.user;
@@ -14,6 +17,7 @@ module.exports.createCheckoutSession = async function (req, res) {
     payment_method_types: ['card'],
     line_items: [{
       name: plan.name,
+      customer_name:user.name,
       description: plan.description,
       amount: plan.price * 100,
       currency: 'inr',
@@ -49,11 +53,11 @@ module.exports.createCheckoutSession = async function (req, res) {
 
 }
 
-module.exports.createNewBooking = async function (req, res) {
-  const planId = req.body.planId;
-  const userId = req.body.userId;
-  const user = await userModel.findById(userId);
-  const plan = await planModel.findById(planId);
+module.exports.createNewBooking = async function (user_email, planName) {
+  // const planId = req.body.planId;
+  // const userId = req.body.userId;
+  const user = await userModel.findOne({email:user_email});
+  const plan = await planModel.findById({name:planName});
 
   if (user.userBookedPlansId == undefined) {
     // 1 first time user
@@ -101,3 +105,22 @@ module.exports.createNewBooking = async function (req, res) {
 
 
 }
+module.exports.createbooking=async function(req,res){
+  const sig=request.headers['stripe-signature'];
+  let event;
+  const endpointSecret = END_POINT_SECRET;
+  try {
+    event=stripe.webhooks.constructEvent(request.body,sig,endpointSecret);
+    if(event.type=="payment_intent.succeeded"){
+      const userEmail=event.data.object.customer_email;
+      const planName=event.data.object.line_items[0].name;
+      await createNewBooking(userEmail,planName);
+    response.json({received:true});
+
+    }
+  }
+
+    catch(err){
+      response.status(400).sent(`Webhook Error: ${err.message}`);
+        }
+  }
