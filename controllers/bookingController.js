@@ -105,7 +105,7 @@ module.exports.createNewBooking = async function (user_email, planName) {
 
 
 }
-module.exports.createbooking=async function(req,res){
+module.exports.createbooking=async function(request,response){
   const sig=request.headers['stripe-signature'];
   let event;
   const endpointSecret = END_POINT_SECRET;
