@@ -1,12 +1,10 @@
 const planModel = require("../models/planModel");
 const userModel = require("../models/userModel");
 const bookingModel = require("../models/bookingModel");
-const END_POINT_SECRET=process.env.END_POINT_SECRET_KEY;
+const END_POINT_SECRET = process.env.END_POINT_SECRET;
 // const stripe = require("stripe");
-//stripe require stream parser in order to analyse the data 
 const SK = process.env.SK;
 const stripe = require('stripe')(SK);
-
 module.exports.createCheckoutSession = async function (req, res) {
   const id = req.params.id;
   const user = req.user;
@@ -15,9 +13,10 @@ module.exports.createCheckoutSession = async function (req, res) {
   console.log(plan);
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
+    customer_email: user.email,
+    client_reference_id:plan.id,
     line_items: [{
       name: plan.name,
-      customer_name:user.name,
       description: plan.description,
       amount: plan.price * 100,
       currency: 'inr',
@@ -26,8 +25,6 @@ module.exports.createCheckoutSession = async function (req, res) {
     success_url: `${req.protocol}://${req.get("host")}/me`,
     cancel_url: `${req.protocol}://${req.get("host")}/login`,
   });
-  // req.protocol
-// req.headers.hostnam
   res.json({
     session,
     userId
@@ -53,11 +50,12 @@ module.exports.createCheckoutSession = async function (req, res) {
 
 }
 
-module.exports.createNewBooking = async function (user_email, planName) {
-  // const planId = req.body.planId;
-  // const userId = req.body.userId;
-  const user = await userModel.findOne({email:user_email});
-  const plan = await planModel.findById({name:planName});
+const createNewBooking = async function (userEmail, planId) {
+  const user = await userModel.findOne({ email: userEmail });
+  const plan = await planModel.findById(planId);
+  console.log(user);
+  
+  const userId = user["_id"];
 
   if (user.userBookedPlansId == undefined) {
     // 1 first time user
@@ -76,10 +74,7 @@ module.exports.createNewBooking = async function (user_email, planName) {
     const newOrder = await bookingModel.create(order);
     // user update
     user.userBookedPlansId = newOrder["_id"];
-    await user.save({ validateBeforeSave: false });
-    return res.json({
-      newOrder
-    });
+    await user.save({ validateBeforeSave: false }); 
   }
   else {
     const newPlan = {
@@ -93,10 +88,7 @@ module.exports.createNewBooking = async function (user_email, planName) {
     const newbooking = await bookingModel.findByIdAndUpdate(booking["_id"], {
       bookedPlans: newBookedPlans
     }, { new: true });
-    return res.json({
-      newbooking,
-      success: "New Plan Added"
-    });
+   
   }
 
 
@@ -105,22 +97,23 @@ module.exports.createNewBooking = async function (user_email, planName) {
 
 
 }
-module.exports.createbooking=async function(request,response){
-  const sig=request.headers['stripe-signature'];
+module.exports.createBooking = async function (request, response) {
+  const sig = request.headers['stripe-signature'];
   let event;
   const endpointSecret = END_POINT_SECRET;
   try {
-    event=stripe.webhooks.constructEvent(request.body,sig,endpointSecret);
-    if(event.type=="payment_intent.succeeded"){
-      const userEmail=event.data.object.customer_email;
-      const planName=event.data.object.line_items[0].name;
-      await createNewBooking(userEmail,planName);
-    response.json({received:true});
-
-    }
+    event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+    // console.log(event);
   }
-
-    catch(err){
-      response.status(400).sent(`Webhook Error: ${err.message}`);
-        }
+  catch (err) {
+  return  response.status(400).send(`Webhook Error: ${err.message}`);
   }
+  if(event.type=="checkout.session.completed"){
+    const userEmail = event.data.object.customer_email;
+    console.log(event.data.object);
+    const planId = event.data.object.client_reference_id;
+    await createNewBooking(userEmail, planId);
+    // payment complete
+  }
+  response.json({ received: true });
+}

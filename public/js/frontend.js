@@ -30,11 +30,7 @@ if (login) {
     sendLogin(email, password);
   });
 }
-if (signup) {
-  if (response.data.success) {
-    location.assign("/");
-  }
-}
+
 
 if (bookPlan) {
   bookPlan.addEventListener("click", async function (e) {
@@ -47,10 +43,7 @@ if (bookPlan) {
 
     console.log(session.id);
 // booking create
-    const result = await axios.post("/api/bookings/createNewbooking", {
-      userId: userId,
-      planId: planId
-    })
+   
     
     stripe.redirectToCheckout({
       // Make the id field from the Checkout Session creation API response

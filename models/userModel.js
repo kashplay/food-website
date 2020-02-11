@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 // Database link
-// const config = require("../s/config");
+// const config = require("../configs/config");
 // nodejs inbuilt module
 const crypto = require("crypto");
 // database connection

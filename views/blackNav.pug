@@ -1,0 +1,16 @@
+nav
+  ul.navigation
+    li.nav-line
+      a(href='/#feature-section') FEATURES   
+    li.nav-line
+      a(href='/#review') REVIEWS
+    li.nav-line
+      a(href='/plans') PLANS
+    if user
+      li.nav-line
+          a(href='/me') #{user.name}
+      li.nav-line
+          a(href="/logout") LOGOUT
+    else
+      li.nav-line
+          a(href='/login') LOGIN
